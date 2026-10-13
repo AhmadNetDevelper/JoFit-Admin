@@ -1,0 +1,2 @@
+@import "tailwindcss";
+@source inline("data-active:bg-background data-open:bg-red-500 data-checked:bg-blue-500 data-selected:bg-green-500");

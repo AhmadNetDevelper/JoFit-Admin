@@ -1,0 +1,99 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc"
+  ],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "@/features/*/*"
+            ],
+            "message": "Import a feature through its public barrel (@/features/<name>), not its internals."
+          },
+          {
+            "group": [
+              "@/mocks",
+              "@/mocks/*"
+            ],
+            "message": "Mock data may only be imported by a mock adapter (*.mock.ts) or by other mocks."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/components/ui/**"
+      ],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": [
+        "src/hooks/use-mobile.ts"
+      ],
+      "rules": {
+        "react/set-state-in-effect": "off"
+      }
+    },
+    {
+      "files": [
+        "src/components/**",
+        "src/lib/**",
+        "src/services/**",
+        "src/hooks/**",
+        "src/config/**",
+        "src/types/**",
+        "src/i18n/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/features",
+                  "@/features/*",
+                  "@/features/*/*"
+                ],
+                "message": "Shared infrastructure must not depend on a business domain."
+              },
+              {
+                "group": [
+                  "@/mocks",
+                  "@/mocks/*"
+                ],
+                "message": "Shared infrastructure must not import mock data."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/mocks/**",
+        "src/features/*/services/*.mock.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

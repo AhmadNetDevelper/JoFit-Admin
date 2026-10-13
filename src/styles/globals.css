@@ -1,0 +1,612 @@
+/*
+ * Design tokens and base layer.
+ *
+ * Adapted from next-shadcn-admin-dashboard by Mohammed Arham Khan (MIT).
+ * https://github.com/arhamkhnz/next-shadcn-admin-dashboard
+ *
+ * The structure is upstream's; the colour values are JoFit's — see "THE JOFIT
+ * PALETTE" below. What is left out is Next-only or unused here: the
+ * alternative theme presets and the font-picker utilities.
+ *
+ * BIDIRECTIONALITY
+ * There is no RTL stylesheet. Components use logical properties, which Tailwind
+ * resolves against the document's `dir`, so the layout mirrors when
+ * `I18nProvider` sets `dir="rtl"`.
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+/*
+ * shadcn's own Tailwind entry point. It is not optional and it is not
+ * Next-specific: it declares the nine `@custom-variant` rules the copied
+ * components are written against — `data-active`, `data-open`, `data-checked`
+ * and the rest.
+ *
+ * Tailwind's built-in `data-active:` matches on the attribute being *present*.
+ * React renders `data-active={false}` as the string `"false"`, which is still
+ * present — so without these variants every sidebar item rendered in its active
+ * state at once. The variant narrows it to `:not([data-active="false"])`, which
+ * is what makes "active" mean active.
+ *
+ * The sidebar is where it showed, because `SidebarMenuButton` is the component
+ * that writes `data-active`. The other eight variants guard the same class of
+ * bug in components driven by Radix state attributes.
+ */
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+}
+
+/*
+ * THE JOFIT PALETTE.
+ *
+ * This used to be upstream's neutral preset, unchanged: black buttons, grey
+ * charts, black badges — a perfectly good admin that could have belonged to
+ * anyone. The structure is still upstream's (scale, radii, surfaces); the
+ * colour is the brand's, the same three the sign-in panel and the storefront
+ * are drawn in:
+ *
+ *   #008050   action   — primary buttons, focus, the chart line
+ *   #d4b36a   gold     — the one accent: the active rail item, "quick create"
+ *   #07281b   deep     — the rail, in both themes
+ *
+ * THE RAIL IS DARK IN BOTH THEMES. It is the part of the admin that is always
+ * on screen and never the thing being read, so it can carry the brand at full
+ * strength without competing with a table. It is also what makes the admin
+ * feel like the same building as the sign-in panel someone just walked
+ * through.
+ *
+ * The neutrals carry a trace of the green (hue ~165, chroma under 0.02) rather
+ * than being pure grey. Nobody will name it, but pure grey beside a green
+ * reads cold; this is why the canvas reads as one family.
+ */
+:root {
+  --radius: 0.625rem;
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.018 165);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.018 165);
+  --primary: #008050;
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.012 165);
+  --secondary-foreground: oklch(0.3 0.04 165);
+  --muted: oklch(0.962 0.007 165);
+  --muted-foreground: oklch(0.5 0.018 165);
+  --accent: oklch(0.955 0.022 160);
+  --accent-foreground: oklch(0.32 0.07 160);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.915 0.009 165);
+  --input: oklch(0.895 0.011 165);
+  --ring: oklch(0.62 0.13 160);
+  --chart-1: #008050;
+  --chart-2: #d4b36a;
+  --chart-3: oklch(0.6 0.1 200);
+  --chart-4: oklch(0.62 0.1 130);
+  --chart-5: #08301f;
+  --sidebar: #07281b;
+  --sidebar-foreground: oklch(0.93 0.012 165);
+  --sidebar-primary: #d4b36a;
+  --sidebar-primary-foreground: #1c1405;
+  --sidebar-accent: rgb(255 255 255 / 0.075);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: #d4b36a;
+  /* Brand constants for the few places that need one outside the scale. */
+  --brand-gold: #d4b36a;
+  --brand-deep: #07281b;
+
+  /* fonts */
+  /*
+   * Geist draws the Latin, IBM Plex Sans Arabic the Arabic. A font stack falls
+   * back per glyph, so one sentence containing both renders each in the face
+   * that has it. Geist has no Arabic at all.
+   */
+  --font-sans: Geist, "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --background: oklch(0.982 0.004 165);
+  --foreground: oklch(0.2 0.018 165);
+}
+
+/* Night in the same building: a green-black canvas, cards a step lighter, and
+   the action green lifted until it clears 4.5:1 against the dark. */
+.dark {
+  --background: oklch(0.155 0.012 165);
+  --foreground: oklch(0.965 0.006 165);
+  --card: oklch(0.195 0.014 165);
+  --card-foreground: oklch(0.965 0.006 165);
+  --popover: oklch(0.205 0.015 165);
+  --popover-foreground: oklch(0.965 0.006 165);
+  --primary: oklch(0.72 0.15 158);
+  --primary-foreground: oklch(0.17 0.03 165);
+  --secondary: oklch(0.255 0.016 165);
+  --secondary-foreground: oklch(0.95 0.008 165);
+  --muted: oklch(0.245 0.014 165);
+  --muted-foreground: oklch(0.72 0.016 165);
+  --accent: oklch(0.275 0.035 160);
+  --accent-foreground: oklch(0.95 0.02 160);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.72 0.15 158);
+  --chart-1: oklch(0.72 0.15 158);
+  --chart-2: #dcc083;
+  --chart-3: oklch(0.7 0.1 200);
+  --chart-4: oklch(0.72 0.1 130);
+  --chart-5: oklch(0.55 0.08 160);
+  --sidebar: #041a11;
+  --sidebar-foreground: oklch(0.93 0.012 165);
+  --sidebar-primary: #d4b36a;
+  --sidebar-primary-foreground: #1c1405;
+  --sidebar-accent: rgb(255 255 255 / 0.07);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.07);
+  --sidebar-ring: #d4b36a;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+html {
+  overscroll-behavior: none;
+}
+
+::view-transition-group(landing-dashboard-preview) {
+  animation-duration: 360ms;
+  animation-timing-function: ease-out;
+}
+
+.disable-transitions * {
+  transition: none !important;
+}
+
+@layer base {
+  /*
+   * Figures are the content of this tool: order totals, stock counts, deposits.
+   * Even-width figures keep a column readable at a glance.
+   */
+  table,
+  [data-figure] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * The error summary links to `#field-<name>`. The app header is sticky, so a
+   * field jumped to must stop below it, with room for its label above.
+   */
+  [id^="field-"] {
+    scroll-margin-block: 6rem;
+  }
+
+  /*
+   * Arabic needs a little more line height than Latin at the same size to stay
+   * legible. This is typographic necessity, not a design decision.
+   */
+  :root:lang(ar) {
+    line-height: 1.7;
+  }
+}
+
+/*
+ * React mounts into #root, between <body> and the shell. Without this the
+ * shell's `flex-1` has nothing to grow against and the sidebar stops wherever
+ * the content ends instead of running the height of the window.
+ */
+#root {
+  display: flex;
+  flex: 1;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+/*
+ * Sign-in entrance.
+ *
+ * One orchestrated sequence, on one screen, played once. The elements arrive in
+ * the order they are read — heading, then the field you type in first — which is
+ * the only reason this is staggered rather than a single fade: it points the eye
+ * at where to start.
+ *
+ * Every element's resting state IS the final keyframe, and `forwards` holds it,
+ * so if the animation never runs the page is still correct. That is what makes
+ * the reduced-motion rule in this file safe: collapsing the duration to nothing
+ * lands on the finished layout instead of leaving it half-transparent.
+ */
+@keyframes fadeSlideIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes testimonialIn {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@layer components {
+  .animate-element {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(12px);
+    animation: fadeSlideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-slide-right {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateX(16px);
+    animation: slideRightIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* Mirrored with the document: in Arabic the panel arrives from the left. */
+  [dir="rtl"] .animate-slide-right {
+    transform: translateX(-16px);
+  }
+
+  .animate-credential {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(10px) scale(0.98);
+    animation: testimonialIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-delay-100 { animation-delay: 0.1s; }
+  .animate-delay-200 { animation-delay: 0.2s; }
+  .animate-delay-300 { animation-delay: 0.3s; }
+  .animate-delay-400 { animation-delay: 0.4s; }
+  .animate-delay-500 { animation-delay: 0.5s; }
+  .animate-delay-600 { animation-delay: 0.6s; }
+  .animate-delay-700 { animation-delay: 0.7s; }
+  .animate-delay-800 { animation-delay: 0.8s; }
+  .animate-delay-900 { animation-delay: 0.9s; }
+  .animate-delay-1000 { animation-delay: 1s; }
+  .animate-delay-1200 { animation-delay: 1.2s; }
+}
+
+/*
+ * The two entrances on the sign-in screen — the panel sliding in from the
+ * window's outer edge, and the card fading up under it — are Motion's, in
+ * `app/routes/sign-in.tsx`. They are there rather than here because the panel's
+ * direction is decided by the document's, and because the card must not move
+ * once it has landed: it is a form staff sign into several times a day.
+ *
+ * What stays in CSS is everything below: ambient loops with nothing to decide.
+ */
+
+/*
+ * The panel behind the mark.
+ *
+ * Four layers, each drifting at its own speed, so the depth comes from parallax
+ * rather than from anything being fast. Nothing here is decoration for its own
+ * sake — a dot grid and ruled lines are how a court is marked out, and the slow
+ * circle is a centre circle. The panel is a pitch seen from above, with the
+ * mark standing on it.
+ *
+ * Everything is drawn at low opacity on purpose. The moment a reader notices the
+ * background, it has taken attention from the one thing this screen is for,
+ * which is the sign-in form on the other side of it.
+ *
+ * All of it stops under `prefers-reduced-motion`, and every layer rests in a
+ * position that looks deliberate, so what is left is a still pattern.
+ */
+@keyframes fieldDriftDiagonal {
+  to {
+    background-position: 160px 160px;
+  }
+}
+
+@keyframes fieldDriftReverse {
+  to {
+    background-position: -220px 110px;
+  }
+}
+
+@keyframes fieldRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dust in a floodlight: up, fading, never in a straight line. */
+@keyframes moteRise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  15% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(14px, -180px, 0) scale(1);
+  }
+}
+
+@layer components {
+  /* The dot grid: a court marked in points, drifting diagonally. */
+  .field-dots {
+    background-image: radial-gradient(currentColor 1px, transparent 1px);
+    background-size: 22px 22px;
+    animation: fieldDriftDiagonal 40s linear infinite;
+  }
+
+  /* Hairlines running the other way, slower, so the two never lock together. */
+  .field-lines {
+    background-image:
+      repeating-linear-gradient(
+        115deg,
+        currentColor 0 1px,
+        transparent 1px 64px
+      ),
+      repeating-linear-gradient(25deg, currentColor 0 1px, transparent 1px 96px);
+    animation: fieldDriftReverse 75s linear infinite;
+  }
+
+  .field-circle {
+    animation: fieldRotate 120s linear infinite;
+  }
+
+  .field-mote {
+    animation: moteRise 9s ease-out infinite;
+  }
+}
+
+/*
+ * The sport glyphs drift on a long, lopsided path — never straight, never back
+ * to exactly where they started within one cycle. A pattern that repeats
+ * visibly stops being a background and becomes something to watch.
+ */
+@keyframes sportDrift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  33% {
+    transform: translate3d(18px, -22px, 0) rotate(7deg);
+  }
+  66% {
+    transform: translate3d(-14px, -10px, 0) rotate(-5deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@layer components {
+  .sport-glyph {
+    animation-name: sportDrift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+}
+
+/*
+ * The mark's motion.
+ *
+ * The JoFit mark is a barbell drawn as a letterform, so it moves the way a
+ * loaded bar does — it is lifted, it settles, and then it never sits perfectly
+ * still. Spinning it or sliding it in from the side would be motion applied *to*
+ * a logo rather than motion that is about this one.
+ *
+ * Three layers, running together:
+ *
+ *   lift    once, on arrival, with a small overshoot — the rep.
+ *   drift   forever after, rising and tilting a couple of degrees. A bar held
+ *           overhead is never level; this is that, slowed down.
+ *   shine   a light travelling across the metal, masked to the mark's own shape
+ *           so it lights the letterform and not the box around it.
+ *
+ * The three are deliberately out of phase — 7s, 9s and 5.5s — so they never line
+ * up into a visible loop. Matching them would turn a living object back into a
+ * repeating animation.
+ *
+ * `prefers-reduced-motion` ends all of it: the rule at the foot of this file
+ * caps every iteration at one and collapses the duration, and each animation
+ * rests at the mark's natural position, so what is left is a logo sitting still.
+ */
+@keyframes markLift {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92) rotate(-3deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.03) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+/* Vertical drift and tilt are separate keyframes on nested elements, so the two
+   compose instead of one transform overwriting the other. */
+@keyframes markDrift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes markTilt {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes markShine {
+  0% {
+    background-position: -150% 0;
+  }
+  /* The sweep takes a fifth of the cycle; the rest is the pause between passes,
+     which is what stops it reading as a flicker. */
+  20%,
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+@keyframes markGlow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
+}
+
+@layer components {
+  /*
+   * The lift, then the drift. One `animation` shorthand with two entries so the
+   * second starts exactly as the first ends — chaining them with a delay instead
+   * leaves a frame where neither applies and the mark jumps.
+   */
+  .animate-mark {
+    animation:
+      markLift 0.9s cubic-bezier(0.34, 1.3, 0.64, 1) forwards,
+      markDrift 7s ease-in-out 0.9s infinite;
+  }
+
+  .animate-mark-tilt {
+    animation: markTilt 9s ease-in-out 0.9s infinite;
+  }
+
+  .animate-mark-glow {
+    animation: markGlow 9s ease-in-out infinite;
+  }
+
+  /*
+   * The shine is a moving band of light clipped to the mark's own alpha. The
+   * PNG is the mask, so the light lands on the letterform rather than on a
+   * rectangle over it.
+   */
+  .animate-mark-shine {
+    background-image: linear-gradient(
+      100deg,
+      transparent 40%,
+      rgb(255 255 255 / 0.85) 50%,
+      transparent 60%
+    );
+    background-size: 250% 100%;
+    background-repeat: no-repeat;
+    /* Safari still needs the prefixed properties; without them the shine would
+       render as a bright rectangle over the mark instead of inside it. */
+    -webkit-mask-image: url("/jofit-mark.png");
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: url("/jofit-mark.png");
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    animation: markShine 5.5s ease-in-out 1.4s infinite;
+  }
+
+  /*
+   * In the sidebar the mark answers the pointer instead of moving on its own: a
+   * logo drifting in the corner of a tool someone has open all day is a
+   * distraction, but one that responds when you reach for it is feedback.
+   */
+  .mark-hover {
+    transition: transform 0.25s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+
+  .group\/brand:hover .mark-hover {
+    transform: translateY(-2px) scale(1.08) rotate(-4deg);
+  }
+}
+
+/*
+ * Anyone who has asked their system for less motion gets none.
+ *
+ * Collapsing the duration rather than removing the animation is deliberate: the
+ * entrance animations above animate *to* their resting state, so a duration of
+ * almost nothing lands on the finished layout immediately. Removing them would
+ * leave every element stuck at its starting `opacity: 0`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
