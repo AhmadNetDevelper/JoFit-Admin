@@ -8,8 +8,8 @@ import * as m from "motion/react-m";
 
 import { Field, FormError } from "@/components/form";
 import { Button, Checkbox, Input } from "@/components/ui";
-import { authService, useSession } from "@/features/auth";
-import { useAsyncAction, useAsyncData } from "@/hooks";
+import { useSession } from "@/features/auth";
+import { useAsyncAction } from "@/hooks";
 
 import { LanguageToggle } from "../components/language-toggle";
 import { SportGlyphs } from "../components/sport-glyphs";
@@ -45,20 +45,8 @@ import { useTranslation } from "@/i18n";
  *   are fixtures in `src/mocks/auth`.
  *
  * Each of these is one component away once `authService` talks to a real
- * provider — see ARCHITECTURE.md §18. Until then the listed accounts are shown
- * openly, because they are fixtures rather than credentials.
+ * provider — see ARCHITECTURE.md §18.
  */
-const DEV_ACCOUNTS = [
-  "superadmin@jofit.com",
-  "manager@jofit.test",
-  "catalogue@jofit.test",
-  "content@jofit.test",
-  "support@jofit.test",
-  "viewer@jofit.test",
-] as const;
-
-/** Every fixture sits on the same domain, so the chips show only what differs. */
-const ACCOUNT_DOMAIN = "@jofit.test";
 
 /**
  * The fixture password, prefilled like the fixture email above it.
@@ -145,7 +133,6 @@ export function SignInRoute() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const accounts = useAsyncData(() => authService.getSession().then(() => null), []);
   const action = useAsyncAction(
     (input: { email: string; password: string }) => signIn(input),
     {
@@ -314,51 +301,6 @@ export function SignInRoute() {
                     {action.isPending ? t("action.saving") : t("action.signIn")}
                   </Button>
                 </form>
-              </div>
-
-              {/*
-                The stub. It holds the one thing on this card that is temporary —
-                the fixtures anyone can sign in as — so it is drawn as the part
-                that tears off, and the dashed rule is where it will come away.
-              */}
-              <div className="border-t border-dashed border-border bg-muted/40 px-7 py-5">
-                <p className="text-xs font-medium text-muted-foreground">{t("signIn.accounts")}</p>
-
-                {/*
-                  The domain is the same on all six, so only the role that
-                  differs is shown; the full address lands in the field above and
-                  stays in each button's accessible name.
-                */}
-                <ul
-                  className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-0.5"
-                  aria-busy={accounts.isLoading}
-                >
-                  {DEV_ACCOUNTS.map((address) => (
-                    <li key={address}>
-                      <button
-                        type="button"
-                        onClick={() => setEmail(address)}
-                        aria-pressed={email === address}
-                        aria-label={address}
-                        className={cn(
-                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start text-xs transition-colors",
-                          email === address
-                            ? "bg-card font-medium text-foreground shadow-xs"
-                            : "text-muted-foreground hover:bg-card/70 hover:text-foreground",
-                        )}
-                      >
-                        <span
-                          aria-hidden="true"
-                          className={cn(
-                            "size-1.5 shrink-0 rounded-full",
-                            email === address ? "bg-[#008050]" : "bg-border",
-                          )}
-                        />
-                        {address.replace(ACCOUNT_DOMAIN, "")}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           </m.div>

@@ -285,7 +285,6 @@ export const en = {
 
   "signIn.title": "Sign in",
   "signIn.description": "Development sign-in. Any listed account works; passwords are not checked.",
-  "signIn.accounts": "Development accounts",
   "signIn.emailPlaceholder": "Enter your email address",
   "signIn.passwordPlaceholder": "Enter your password",
   "signIn.showPassword": "Show password",

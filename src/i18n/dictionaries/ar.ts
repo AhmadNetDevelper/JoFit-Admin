@@ -283,7 +283,6 @@ export const ar: Dictionary = {
 
   "signIn.title": "تسجيل الدخول",
   "signIn.description": "تسجيل دخول للتطوير فقط. أي حساب من القائمة يعمل، ولا يتم التحقق من كلمات المرور.",
-  "signIn.accounts": "حسابات التطوير",
   "signIn.emailPlaceholder": "أدخل بريدك الإلكتروني",
   "signIn.passwordPlaceholder": "أدخل كلمة المرور",
   "signIn.showPassword": "إظهار كلمة المرور",

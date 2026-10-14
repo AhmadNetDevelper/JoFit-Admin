@@ -199,7 +199,7 @@ function validateCourse(draft: CourseDraft, existing?: AdminCourse): void {
     errors.slug = "Another course already uses this address.";
   }
 
-  if (!COURSE_FORMATS.includes(draft.format)) errors.format = "Choose online, in person or hybrid.";
+  if (!COURSE_FORMATS.includes(draft.format)) errors.format = "Choose online, in person, hybrid or self-paced.";
   if (!COURSE_LEVELS.includes(draft.level)) errors.level = "Choose a level.";
   if (!(Number.isFinite(draft.durationHours) && draft.durationHours > 0 && draft.durationHours <= 2000)) {
     errors.durationHours = "Hours of teaching, more than 0.";
