@@ -22,7 +22,7 @@ import type {
  * OPEN BUSINESS DECISIONS: who may enrol, refunds, and what a certification
  * requires.
  */
-export const COURSE_FORMATS = ["online", "in-person", "hybrid"] as const;
+export const COURSE_FORMATS = ["online", "in-person", "hybrid", "self-paced"] as const;
 export type CourseFormat = (typeof COURSE_FORMATS)[number];
 export const COURSE_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 export type CourseLevel = (typeof COURSE_LEVELS)[number];
