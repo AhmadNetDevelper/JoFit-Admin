@@ -69,7 +69,7 @@ export interface AdminCourse {
   readonly slug: string;
   readonly title: LocalizedText;
   readonly summary: LocalizedText;
-  /** Live-only today (`AdminCourseDto.description`) — `AdminCourse` has no editor field for it yet, only `summary`. */
+  /** `AdminCourseDto.description` — the live API needs it in every language before a course can be published. */
   readonly description?: LocalizedText;
   /**
    * The course's pictures, in display order — the first is the one on its card
@@ -122,6 +122,7 @@ export interface CourseDraft
     | "slug"
     | "title"
     | "summary"
+    | "description"
     | "media"
     | "format"
     | "level"

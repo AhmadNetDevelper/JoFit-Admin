@@ -178,7 +178,11 @@ function ExistingCourse({ courseId }: { courseId: string }) {
               <div className="*:mb-0">
                 <FormError
                   error={publish.error}
-                  labels={{ ...bothLanguages("title", t("field.title")), ...bothLanguages("summary", t("field.summary")) }}
+                  labels={{
+                    ...bothLanguages("title", t("field.title")),
+                    ...bothLanguages("summary", t("field.summary")),
+                    ...bothLanguages("description", t("field.description")),
+                  }}
                 />
               </div>
             ) : null}

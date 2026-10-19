@@ -246,6 +246,7 @@ function fromCourseDraft(draft: CourseDraft) {
     slug: draft.slug,
     title: draft.title,
     summary: draft.summary,
+    ...(draft.description ? { description: draft.description } : {}),
     format: draft.format,
     level: draft.level,
     durationHours: draft.durationHours,
@@ -260,7 +261,6 @@ function fromCourseDraft(draft: CourseDraft) {
     ...(draft.certification ? { certification: draft.certification } : {}),
     nextIntake: draft.nextIntake,
     media: draft.media,
-    // No `description` field on the editor yet — nothing to send.
   };
 }
 

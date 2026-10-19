@@ -59,6 +59,7 @@ const EMPTY: CourseDraft = {
   slug: "",
   title: blank,
   summary: blank,
+  description: blank,
   media: [],
   format: "" as CourseFormat,
   level: "" as CourseLevel,
@@ -83,6 +84,7 @@ function toDraft(course: AdminCourse): CourseDraft {
     slug: course.slug,
     title: course.title,
     summary: course.summary,
+    description: course.description ?? blank,
     media: course.media,
     format: course.format,
     level: course.level,
@@ -184,6 +186,7 @@ export function CourseEditor({
   const labels: Record<string, string> = {
     ...bothLanguages("title", t("field.title")),
     ...bothLanguages("summary", t("field.summary")),
+    ...bothLanguages("description", t("field.description")),
     slug: t("field.slug"),
     media: t("courses.media"),
     format: t("courses.format"),
@@ -237,6 +240,16 @@ export function CourseEditor({
                   hint={t("courses.summaryHint")}
                   value={draft.summary}
                   onChange={(summary) => set("summary", summary)}
+                  fieldErrors={errors}
+                  multiline
+                  required={isPublished}
+                />
+                <LocalizedField
+                  name="description"
+                  label={t("field.description")}
+                  hint={t("courses.summaryHint")}
+                  value={draft.description ?? blank}
+                  onChange={(description) => set("description", description)}
                   fieldErrors={errors}
                   multiline
                   required={isPublished}

@@ -50,7 +50,21 @@ async function parseBody(response: Response): Promise<unknown> {
  * API rejects it — the caller then falls through to the ordinary 401
  * handling, same as any other expired/absent session.
  */
-async function refreshSession(): Promise<string | undefined> {
+let inflightRefresh: Promise<string | undefined> | undefined;
+
+/**
+ * Single-flight: parallel calls that hit an expired token share one refresh.
+ * Refresh tokens are typically single-use, so a second concurrent refresh would
+ * be rejected and wipe the freshly stored session ("session ended").
+ */
+function refreshSession(): Promise<string | undefined> {
+  inflightRefresh ??= doRefresh().finally(() => {
+    inflightRefresh = undefined;
+  });
+  return inflightRefresh;
+}
+
+async function doRefresh(): Promise<string | undefined> {
   const refreshToken = readTokens()?.refreshToken;
   if (!refreshToken) return undefined;
   try {
@@ -64,6 +78,15 @@ async function refreshSession(): Promise<string | undefined> {
     clearTokens();
     return undefined;
   }
+}
+
+/** Refresh this long before the access token's stated expiry, so an active user never hits a 401. */
+const REFRESH_SKEW_MS = 60_000;
+
+function isNearExpiry(expiresOnUtc: string | undefined): boolean {
+  if (!expiresOnUtc) return false;
+  const expiresAt = Date.parse(expiresOnUtc);
+  return Number.isFinite(expiresAt) && expiresAt - Date.now() < REFRESH_SKEW_MS;
 }
 
 export async function httpRequest<TResponse>(
@@ -96,7 +119,12 @@ async function attemptRequest<TResponse>(
     : timeoutSignal;
 
   const isForm = typeof FormData !== "undefined" && options.body instanceof FormData;
-  const token = options.auth ? readTokens()?.accessToken : undefined;
+  let stored = options.auth ? readTokens() : undefined;
+  if (stored && canRefresh && isNearExpiry(stored.expiresOnUtc)) {
+    await refreshSession();
+    stored = readTokens();
+  }
+  const token = stored?.accessToken;
 
   try {
     const response = await fetch(resolveUrl(path, options.query), {
