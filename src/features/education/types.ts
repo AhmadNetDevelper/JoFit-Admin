@@ -83,7 +83,7 @@ export interface AdminCourse {
   readonly price: Money;
   readonly compareAtPrice?: Money;
   readonly categoryIds: readonly string[];
-  /** The live `AdminCourseDto`/`CourseDraftRequest` have no `sportIds` field at all — nothing to read or write yet. */
+  /** Sports the course is filed under (`AdminCourseDto.sportIds` / `CourseDraftRequest.sportIds`). */
   readonly sportIds?: readonly SportId[];
   /** Coach ids — courses are taught by the people the coaches domain verifies. */
   readonly instructorIds: readonly string[];

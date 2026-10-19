@@ -82,6 +82,7 @@ interface AdminCourseDto {
   readonly compareAtPrice: MoneyDto | null;
   readonly categoryIds: readonly number[];
   readonly instructorIds: readonly number[];
+  readonly sportIds?: readonly number[];
   readonly languages: readonly string[];
   readonly venue: LocalizedText | null;
   readonly certification: CertificationDto | null;
@@ -188,7 +189,7 @@ function toAdminCourse(dto: AdminCourseDto): AdminCourse {
     price: toMoney(dto.price),
     ...(dto.compareAtPrice ? { compareAtPrice: toMoney(dto.compareAtPrice) } : {}),
     categoryIds: dto.categoryIds.map(String),
-    // Live has no `sportIds` on this DTO at all — nothing to read (or write) yet.
+    sportIds: (dto.sportIds ?? []).map(String),
     instructorIds: dto.instructorIds.map(String),
     moduleCount: dto.moduleCount,
     ...(dto.certification ? { certification: dto.certification } : {}),
@@ -254,7 +255,7 @@ function fromCourseDraft(draft: CourseDraft) {
     price: draft.price,
     ...(draft.compareAtPrice ? { compareAtPrice: draft.compareAtPrice } : {}),
     categoryIds: draft.categoryIds.map(Number),
-    // Live request has no `sportIds` field at all — nothing to send.
+    sportIds: (draft.sportIds ?? []).map(Number),
     instructorIds: draft.instructorIds.map(Number),
     languages: draft.languages,
     ...(draft.venue ? { venue: draft.venue } : {}),
