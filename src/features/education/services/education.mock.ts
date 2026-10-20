@@ -18,8 +18,10 @@ import type { LocalizedText, Money, SortState } from "@/types";
 
 import {
   COURSE_FORMATS,
+  COURSE_INTAKE_STATUSES,
   COURSE_LEVELS,
   allowedEnrolmentTransitions,
+  resolveIntakeState,
   type AdminCourse,
   type CourseCategory,
   type CourseCategoryDraft,
@@ -64,7 +66,10 @@ function withLiveCounts(course: AdminCourse): AdminCourse {
     nextIntake: {
       ...course.nextIntake,
       seatsTaken,
-      state: intakeState(course.nextIntake.startsOn, course.nextIntake.seatsTotal, seatsTaken),
+      state: resolveIntakeState(
+        course.nextIntake.status,
+        intakeState(course.nextIntake.startsOn, course.nextIntake.seatsTotal, seatsTaken),
+      ),
     },
     enrolmentCount: own.filter((enrolment) => enrolment.status !== "cancelled").length,
   };
@@ -72,6 +77,8 @@ function withLiveCounts(course: AdminCourse): AdminCourse {
 
 function selectSortValue(course: AdminCourse, field: CourseSortField, locale: Locale): unknown {
   switch (field) {
+    case "displayOrder":
+      return course.displayOrder;
     case "title":
       return localize(course.title, locale);
     case "status":
@@ -160,7 +167,12 @@ function readCourseDraft(input: CourseDraft): CourseDraft {
     languages: ids(raw.languages),
     // Only a course taught somewhere has a venue; one sent with an online course is dropped.
     venue: raw.format === "in-person" || raw.format === "hybrid" ? text(raw.venue) : undefined,
-    nextIntake: { startsOn: str(intake.startsOn), seatsTotal: num(intake.seatsTotal) },
+    nextIntake: {
+      startsOn: str(intake.startsOn),
+      seatsTotal: num(intake.seatsTotal),
+      status: COURSE_INTAKE_STATUSES.find((status) => status === intake.status) ?? "auto",
+    },
+    displayOrder: num(raw.displayOrder),
   };
 }
 
@@ -205,6 +217,7 @@ function validateCourse(draft: CourseDraft, existing?: AdminCourse): void {
     errors.durationHours = "Hours of teaching, more than 0.";
   }
   if (!isWhole(draft.moduleCount, 0, 200)) errors.moduleCount = "A whole number of modules, from 0 to 200.";
+  if (!isWhole(draft.displayOrder, 0, 9999)) errors.displayOrder = "A whole number from 0 to 9999.";
 
   if (!isPrice(draft.price)) errors.price = "Enter the price in dinars, with up to three decimals.";
   if (draft.compareAtPrice && (!isPrice(draft.compareAtPrice) || draft.compareAtPrice.amount <= draft.price.amount)) {
@@ -314,7 +327,7 @@ export const mockEducationAdminService: EducationAdminService = {
       return true;
     });
     const locale = query.locale ?? DEFAULT_LOCALE;
-    const sort: SortState<CourseSortField> = query.sort ?? { field: "title", direction: "asc" };
+    const sort: SortState<CourseSortField> = query.sort ?? { field: "displayOrder", direction: "asc" };
     const sorted = sortRows(filtered, (course) => selectSortValue(course, sort.field, locale), sort.direction);
     return paginate(sorted, query);
   },

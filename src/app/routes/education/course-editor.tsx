@@ -1,4 +1,4 @@
-import { Loader2, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,13 +29,16 @@ import { usePermission } from "@/features/auth";
 import type { AdminCoach } from "@/features/coaches";
 import {
   COURSE_FORMATS,
+  COURSE_INTAKE_STATUSES,
   COURSE_LEVELS,
   educationAdminService,
   type AdminCourse,
   type CourseCategory,
   type CourseDraft,
   type CourseFormat,
+  type CourseIntakeStatus,
   type CourseLevel,
+  type CourseModule,
 } from "@/features/education";
 import type { Sport } from "@/features/sports";
 import { useAsyncAction, useUnsavedGuard } from "@/hooks";
@@ -44,7 +47,7 @@ import { useFormatters, useTranslation, type TranslationKey } from "@/i18n";
 import { recordPath } from "../../record-paths";
 import { bothLanguages, slugify } from "../coaches/form-helpers";
 import { MoneyField, NumberField } from "../coaches/form-inputs";
-import { FORMAT_LABEL, LEVEL_LABEL } from "./course-labels";
+import { FORMAT_LABEL, INTAKE_STATUS_LABEL, LEVEL_LABEL } from "./course-labels";
 
 const blank = { en: "", ar: "" };
 const unpriced = { amount: Number.NaN, currency: "JOD" as const };
@@ -69,11 +72,13 @@ const EMPTY: CourseDraft = {
   categoryIds: [],
   sportIds: [],
   instructorIds: [],
-  moduleCount: Number.NaN,
+  moduleCount: 0,
+  modules: [],
   certification: undefined,
   languages: [],
   venue: blank,
-  nextIntake: { startsOn: "", seatsTotal: Number.NaN },
+  nextIntake: { startsOn: "", seatsTotal: Number.NaN, status: "auto" },
+  displayOrder: 0,
 };
 
 /** Languages of delivery on offer; any code already on a course is offered as well. */
@@ -95,10 +100,16 @@ function toDraft(course: AdminCourse): CourseDraft {
     sportIds: course.sportIds,
     instructorIds: course.instructorIds,
     moduleCount: course.moduleCount,
+    modules: course.modules ?? [],
     certification: course.certification,
     languages: course.languages,
     venue: course.venue,
-    nextIntake: { startsOn: course.nextIntake.startsOn, seatsTotal: course.nextIntake.seatsTotal },
+    nextIntake: {
+      startsOn: course.nextIntake.startsOn,
+      seatsTotal: course.nextIntake.seatsTotal,
+      status: course.nextIntake.status,
+    },
+    displayOrder: course.displayOrder,
   };
 }
 
@@ -176,6 +187,19 @@ export function CourseEditor({
   const setLater = <K extends keyof CourseDraft>(key: K, value: CourseDraft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
 
+  /* The module count is the syllabus length — never typed separately. */
+  const setModules = (modules: readonly CourseModule[]) => setDraft({ ...draft, modules, moduleCount: modules.length });
+  const modules = draft.modules ?? [];
+  const patchModule = (index: number, patch: Partial<CourseModule>) =>
+    setModules(modules.map((module, i) => (i === index ? { ...module, ...patch } : module)));
+  const moveModule = (index: number, by: -1 | 1) => {
+    const target = index + by;
+    if (target < 0 || target >= modules.length) return;
+    const next = [...modules];
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    setModules(next);
+  };
+
   const languageName = (code: string) => new Intl.DisplayNames([localeTag], { type: "language" }).of(code) ?? code;
   const languageOptions = [...new Set([...LANGUAGE_CODES, ...draft.languages])].map((code) => ({
     value: code,
@@ -193,6 +217,7 @@ export function CourseEditor({
     level: t("courses.level"),
     durationHours: t("courses.durationHours"),
     moduleCount: t("courses.modules"),
+    displayOrder: t("courses.displayOrder"),
     languages: t("coaches.languages"),
     ...bothLanguages("venue", t("courses.venue")),
     price: t("field.price"),
@@ -204,6 +229,7 @@ export function CourseEditor({
     ...bothLanguages("certification.issuedBy", t("courses.issuedBy")),
     "nextIntake.startsOn": t("courses.intakeDate"),
     "nextIntake.seatsTotal": t("courses.seats"),
+    "nextIntake.status": t("courses.intakeStatus"),
   };
   const errors = save.fieldErrors;
 
@@ -338,11 +364,12 @@ export function CourseEditor({
                     required
                   />
                   <NumberField
-                    name="moduleCount"
-                    label={t("courses.modules")}
-                    value={draft.moduleCount}
-                    onChange={(moduleCount) => set("moduleCount", moduleCount)}
-                    error={errors?.moduleCount}
+                    name="displayOrder"
+                    label={t("courses.displayOrder")}
+                    hint={t("courses.displayOrderHint")}
+                    value={draft.displayOrder}
+                    onChange={(displayOrder) => set("displayOrder", displayOrder)}
+                    error={errors?.displayOrder}
                     required
                   />
                 </div>
@@ -419,7 +446,80 @@ export function CourseEditor({
                     required
                     className="mb-0"
                   />
+                  <Field
+                    name="nextIntake.status"
+                    label={t("courses.intakeStatus")}
+                    hint={t("courses.intakeStatusHint")}
+                    error={errors?.["nextIntake.status"]}
+                    className="mb-0 sm:col-span-2"
+                  >
+                    {(props) => (
+                      <NativeSelect
+                        {...props}
+                        value={draft.nextIntake.status}
+                        onChange={(event) =>
+                          set("nextIntake", { ...draft.nextIntake, status: event.target.value as CourseIntakeStatus })
+                        }
+                      >
+                        {COURSE_INTAKE_STATUSES.map((status) => (
+                          <NativeSelectOption key={status} value={status}>
+                            {t(INTAKE_STATUS_LABEL[status])}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
+                    )}
+                  </Field>
                 </div>
+              </FormSection>
+
+              <FormSection title={t("courses.modules")}>
+                <p className="mb-4 text-sm text-muted-foreground">{t("courses.modulesHint")}</p>
+                {modules.map((module, index) => (
+                  <div key={index} className="mb-4 rounded-xl border p-3">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold">{String(index + 1).padStart(2, "0")}</span>
+                      <div className="flex gap-1">
+                        <Button type="button" variant="ghost" size="icon" disabled={index === 0} onClick={() => moveModule(index, -1)} aria-label={t("courses.moveUp")}>
+                          <ArrowUp />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" disabled={index === modules.length - 1} onClick={() => moveModule(index, 1)} aria-label={t("courses.moveDown")}>
+                          <ArrowDown />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setModules(modules.filter((_, i) => i !== index))} aria-label={t("courses.removeModule")}>
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    </div>
+                    <LocalizedField
+                      name={`modules.${index}.title`}
+                      label={t("field.title")}
+                      value={module.title}
+                      onChange={(title) => patchModule(index, { title })}
+                      fieldErrors={errors}
+                      required
+                    />
+                    <LocalizedField
+                      name={`modules.${index}.summary`}
+                      label={t("field.summary")}
+                      value={module.summary ?? blank}
+                      onChange={(summary) => patchModule(index, { summary })}
+                      fieldErrors={errors}
+                      multiline
+                    />
+                    <NumberField
+                      name={`modules.${index}.durationMinutes`}
+                      label={t("courses.moduleMinutes")}
+                      value={module.durationMinutes ?? Number.NaN}
+                      onChange={(minutes) =>
+                        patchModule(index, { durationMinutes: Number.isFinite(minutes) ? minutes : undefined })
+                      }
+                      error={errors?.[`modules.${index}.durationMinutes`]}
+                    />
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={() => setModules([...modules, { title: blank }])}>
+                  <Plus /> {t("courses.addModule")}
+                </Button>
               </FormSection>
 
               <FormSection title={t("courses.certification")}>

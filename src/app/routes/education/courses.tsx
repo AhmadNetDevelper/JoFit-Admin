@@ -30,13 +30,19 @@ export function CoursesRoute() {
   const notice = useNotice();
   const canWrite = usePermission("education:write");
   const { query, setSearch, setPage, setSort } = useListQuery<CourseSortField>({
-    defaultSort: { field: "title", direction: "asc" },
+    defaultSort: { field: "displayOrder", direction: "asc" },
   });
   const [deleting, setDeleting] = useState<AdminCourse | null>(null);
 
   const state = useAsyncData(() => educationAdminService.listCourses(query), [query]);
 
   const columns: readonly DataTableColumn<AdminCourse>[] = [
+    {
+      key: "displayOrder",
+      header: t("courses.displayOrder"),
+      sortField: "displayOrder",
+      render: (row) => number(row.displayOrder),
+    },
     { key: "image", header: t("courses.image"), render: (row) => <TableThumbnail image={coverOf(row)} /> },
     {
       key: "title",

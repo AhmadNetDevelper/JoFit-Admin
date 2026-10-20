@@ -12,7 +12,7 @@ import type {
 } from "../types";
 
 export interface EducationAdminService {
-  /** Searched by either title, the summary or the slug; sorted by title when no sort is given. */
+  /** Searched by either title, the summary or the slug; sorted by display order when no sort is given. */
   listCourses(query?: CourseListQuery): Promise<Paginated<AdminCourse>>;
   getCourse(id: string): Promise<AdminCourse | null>;
   /**

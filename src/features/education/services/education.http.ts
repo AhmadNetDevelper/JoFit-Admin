@@ -7,10 +7,12 @@ import type {
   CourseDraft,
   CourseFormat,
   CourseIntakeState,
+  CourseIntakeStatus,
   CourseLevel,
   Enrolment,
   EnrolmentStatus,
 } from "../types";
+import { COURSE_INTAKE_STATUSES, resolveIntakeState } from "../types";
 import type { EducationAdminService } from "./education.contract";
 
 const enc = encodeURIComponent;
@@ -55,6 +57,8 @@ interface NextIntakeDto {
   readonly startsOn: string;
   readonly seatsTotal: number;
   readonly seatsTaken: number;
+  /** `auto | soon | open | full`; absent until the backend sends it. */
+  readonly status?: string | null;
 }
 
 interface PagedResultDto<TDto> {
@@ -65,6 +69,14 @@ interface PagedResultDto<TDto> {
   readonly totalPages: number;
   readonly hasPreviousPage: boolean;
   readonly hasNextPage: boolean;
+}
+
+/** Not in the live spec yet — the shape the backend needs on `AdminCourseDto.modules` and `CourseDraftRequest.modules`. */
+interface CourseModuleDto {
+  readonly title: LocalizedText;
+  readonly summary?: LocalizedText | null;
+  readonly durationMinutes?: number | null;
+  readonly sortOrder?: number | null;
 }
 
 interface AdminCourseDto {
@@ -78,6 +90,7 @@ interface AdminCourseDto {
   readonly level: string;
   readonly durationHours: number;
   readonly moduleCount: number;
+  readonly modules?: readonly CourseModuleDto[] | null;
   readonly price: MoneyDto;
   readonly compareAtPrice: MoneyDto | null;
   readonly categoryIds: readonly number[];
@@ -88,6 +101,7 @@ interface AdminCourseDto {
   readonly certification: CertificationDto | null;
   readonly nextIntake: NextIntakeDto | null;
   readonly media: readonly MediaImageDto[];
+  readonly displayOrder: number;
   readonly enrolmentCount: number;
   readonly publishedAt: string | null;
   readonly audit: AuditDto;
@@ -176,6 +190,9 @@ function intakeState(startsOn: string, seatsTotal: number, seatsTaken: number): 
 function toAdminCourse(dto: AdminCourseDto): AdminCourse {
   // `nextIntake` is itself nullable live (a course with no cohort scheduled yet) — degrade to an empty one.
   const intake = dto.nextIntake ?? { startsOn: "", seatsTotal: 0, seatsTaken: 0 };
+  const intakeStatus = (COURSE_INTAKE_STATUSES as readonly string[]).includes(intake.status ?? "")
+    ? (intake.status as CourseIntakeStatus)
+    : "auto";
   return {
     id: String(dto.id),
     slug: dto.slug ?? "",
@@ -191,7 +208,14 @@ function toAdminCourse(dto: AdminCourseDto): AdminCourse {
     categoryIds: dto.categoryIds.map(String),
     sportIds: (dto.sportIds ?? []).map(String),
     instructorIds: dto.instructorIds.map(String),
-    moduleCount: dto.moduleCount,
+    moduleCount: dto.modules?.length ?? dto.moduleCount,
+    modules: [...(dto.modules ?? [])]
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((module) => ({
+        title: module.title,
+        ...(module.summary ? { summary: module.summary } : {}),
+        ...(module.durationMinutes ? { durationMinutes: module.durationMinutes } : {}),
+      })),
     ...(dto.certification ? { certification: dto.certification } : {}),
     languages: dto.languages,
     ...(dto.venue ? { venue: dto.venue } : {}),
@@ -199,8 +223,10 @@ function toAdminCourse(dto: AdminCourseDto): AdminCourse {
       startsOn: intake.startsOn,
       seatsTotal: intake.seatsTotal,
       seatsTaken: intake.seatsTaken,
-      state: intakeState(intake.startsOn, intake.seatsTotal, intake.seatsTaken),
+      status: intakeStatus,
+      state: resolveIntakeState(intakeStatus, intakeState(intake.startsOn, intake.seatsTotal, intake.seatsTaken)),
     },
+    displayOrder: dto.displayOrder ?? 0,
     enrolmentCount: dto.enrolmentCount,
     // Live has no `rating` on the course DTO at all — nothing to read yet.
     status: dto.status as PublishStatus,
@@ -251,7 +277,17 @@ function fromCourseDraft(draft: CourseDraft) {
     format: draft.format,
     level: draft.level,
     durationHours: draft.durationHours,
-    moduleCount: draft.moduleCount,
+    moduleCount: draft.modules ? draft.modules.length : draft.moduleCount,
+    ...(draft.modules
+      ? {
+          modules: draft.modules.map((module, index) => ({
+            sortOrder: index + 1,
+            title: module.title,
+            ...(module.summary ? { summary: module.summary } : {}),
+            ...(module.durationMinutes ? { durationMinutes: module.durationMinutes } : {}),
+          })),
+        }
+      : {}),
     price: draft.price,
     ...(draft.compareAtPrice ? { compareAtPrice: draft.compareAtPrice } : {}),
     categoryIds: draft.categoryIds.map(Number),
@@ -261,6 +297,7 @@ function fromCourseDraft(draft: CourseDraft) {
     ...(draft.venue ? { venue: draft.venue } : {}),
     ...(draft.certification ? { certification: draft.certification } : {}),
     nextIntake: draft.nextIntake,
+    displayOrder: draft.displayOrder,
     media: draft.media,
   };
 }

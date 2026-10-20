@@ -27,8 +27,20 @@ export type CourseFormat = (typeof COURSE_FORMATS)[number];
 export const COURSE_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 export type CourseLevel = (typeof COURSE_LEVELS)[number];
 
-/** The storefront's four intake states, derived — never stored. */
-export type CourseIntakeState = "open" | "closing" | "full" | "upcoming";
+/** What the storefront shows for the next intake: derived from the seats and date, unless staff set it. */
+export type CourseIntakeState = "open" | "closing" | "full" | "upcoming" | "soon";
+
+/**
+ * What staff choose for the next intake. `auto` lets the seats and date decide;
+ * the others pin the storefront's label whatever the seat count says.
+ */
+export const COURSE_INTAKE_STATUSES = ["auto", "soon", "open", "full"] as const;
+export type CourseIntakeStatus = (typeof COURSE_INTAKE_STATUSES)[number];
+
+/** The state the storefront shows: staff's pinned choice, else the one worked out from seats and date. */
+export function resolveIntakeState(status: CourseIntakeStatus, computed: CourseIntakeState): CourseIntakeState {
+  return status === "auto" ? computed : status;
+}
 
 export interface CourseIntake {
   /** `YYYY-MM-DD`. */
@@ -36,6 +48,9 @@ export interface CourseIntake {
   readonly seatsTotal: number;
   /** Pending and active enrolments on this cohort — counted, not typed. */
   readonly seatsTaken: number;
+  /** Staff's choice: `auto`, or a state pinned on the storefront. */
+  readonly status: CourseIntakeStatus;
+  /** What the storefront actually shows — `status` when pinned, otherwise worked out. */
   readonly state: CourseIntakeState;
 }
 
@@ -64,6 +79,13 @@ export interface CourseCertification {
   readonly issuedBy: LocalizedText;
 }
 
+/** One syllabus entry, in teaching order — the storefront's numbered "المنهاج" list. */
+export interface CourseModule {
+  readonly title: LocalizedText;
+  readonly summary?: LocalizedText;
+  readonly durationMinutes?: number;
+}
+
 export interface AdminCourse {
   readonly id: string;
   readonly slug: string;
@@ -88,12 +110,19 @@ export interface AdminCourse {
   /** Coach ids — courses are taught by the people the coaches domain verifies. */
   readonly instructorIds: readonly string[];
   readonly moduleCount: number;
+  /** The syllabus in teaching order; `moduleCount` follows its length. Absent when the API sends none. */
+  readonly modules?: readonly CourseModule[];
   readonly certification?: CourseCertification;
   /** BCP-47 codes of the languages of delivery. */
   readonly languages: readonly string[];
   /** Absent for an online course. */
   readonly venue?: LocalizedText;
   readonly nextIntake: CourseIntake;
+  /**
+   * Where the course sits on the storefront: lowest first, ties broken by id.
+   * The public course list sorts by it, so what staff set here is the site's order.
+   */
+  readonly displayOrder: number;
   /** Every enrolment that was not cancelled, across all cohorts. */
   readonly enrolmentCount: number;
   /** The live course DTO has no `rating` field at all — nothing to read yet. */
@@ -133,14 +162,16 @@ export interface CourseDraft
     | "sportIds"
     | "instructorIds"
     | "moduleCount"
+    | "modules"
     | "certification"
     | "languages"
     | "venue"
+    | "displayOrder"
   > {
-  readonly nextIntake: Pick<CourseIntake, "startsOn" | "seatsTotal">;
+  readonly nextIntake: Pick<CourseIntake, "startsOn" | "seatsTotal" | "status">;
 }
 
-export const COURSE_SORT_FIELDS = ["title", "status", "enrolmentCount", "updatedAt"] as const;
+export const COURSE_SORT_FIELDS = ["displayOrder", "title", "status", "enrolmentCount", "updatedAt"] as const;
 export type CourseSortField = (typeof COURSE_SORT_FIELDS)[number];
 
 export interface CourseListQuery extends ListQuery<CourseSortField> {

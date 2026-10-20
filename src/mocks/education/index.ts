@@ -44,7 +44,7 @@ export const mockCourseCategories: Omit<CourseCategory, "courseCount">[] = websi
   }),
 );
 
-const listedCourses: AdminCourse[] = websiteSnapshot.courses.map((course) => {
+const listedCourses: AdminCourse[] = websiteSnapshot.courses.map((course, index) => {
   const publishedAt = daysFromToday(-course.publishedDaysAgo);
   return {
     id: course.id,
@@ -70,8 +70,10 @@ const listedCourses: AdminCourse[] = websiteSnapshot.courses.map((course) => {
       startsOn: daysFromToday(course.intake.startsInDays),
       seatsTotal: course.intake.seatsTotal,
       seatsTaken: 0,
+      status: "auto",
       state: "open",
     },
+    displayOrder: index + 1,
     enrolmentCount: 0,
     rating: course.rating,
     status: course.status,
@@ -99,7 +101,8 @@ const draftCourse: AdminCourse = {
   moduleCount: 3,
   languages: ["ar"],
   venue: { en: "JoFit Academy, Amman", ar: "أكاديمية جوفِت، عمّان" },
-  nextIntake: { startsOn: daysFromToday(75), seatsTotal: 12, seatsTaken: 0, state: "upcoming" },
+  nextIntake: { startsOn: daysFromToday(75), seatsTotal: 12, seatsTaken: 0, status: "auto", state: "upcoming" },
+  displayOrder: websiteSnapshot.courses.length + 1,
   enrolmentCount: 0,
   rating: { average: 0, count: 0 },
   status: "draft",
