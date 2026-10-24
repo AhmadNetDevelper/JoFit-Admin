@@ -49,14 +49,6 @@ import { useTranslation } from "@/i18n";
  */
 
 /**
- * The fixture password, prefilled like the fixture email above it.
- *
- * It names itself rather than hiding behind dots that look like a real secret,
- * and it keeps signing in a single click while the field is here.
- */
-const FIXTURE_PASSWORD = "SuperAdmin@123";
-
-/**
  * "Remember me" remembers who you are, not that you are signed in.
  *
  * Keeping someone signed in is a session, and a session belongs in an httpOnly
@@ -127,9 +119,9 @@ export function SignInRoute() {
   const reducedMotion = useReducedMotion();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState(() => readRememberedEmail() ?? "superadmin@jofit.com");
+  const [email, setEmail] = useState(() => readRememberedEmail() ?? "");
   const [remember, setRemember] = useState(() => readRememberedEmail() !== null);
-  const [password, setPassword] = useState(FIXTURE_PASSWORD);
+  const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
