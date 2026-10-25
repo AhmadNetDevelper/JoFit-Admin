@@ -111,7 +111,67 @@ export interface AdminCoach {
   readonly verificationStatus: CoachVerificationStatus;
   /** Recorded when a coach is rejected or suspended, for the audit trail. */
   readonly statusNote?: string;
+  /** The coach's sign-in account. Absent from sources that do not return it. */
+  readonly account?: CoachAccount;
+  /** What the coach entered about themselves; read-only once added. */
+  readonly background?: CoachBackground;
   readonly audit: AuditInfo;
+}
+
+/** The user account behind a coach profile. */
+export interface CoachAccount {
+  readonly userId: string;
+  readonly userName: string;
+  readonly fullName: string;
+  readonly phoneNumber: string;
+  readonly birthDate?: string;
+  readonly isActive: boolean;
+  readonly profileImageUrl?: string;
+}
+
+export interface CoachEducation {
+  readonly id: string;
+  readonly schoolName: string;
+  readonly academicDegree?: LocalizedText;
+  readonly universityMajor?: LocalizedText;
+  readonly startDate?: string;
+  readonly endDate?: string;
+  readonly isStillEducation: boolean;
+}
+
+export interface CoachExperience {
+  readonly id: string;
+  readonly address: string;
+  readonly jobType?: LocalizedText;
+  readonly companyName: string;
+  readonly companyAddress: string;
+  readonly startDate?: string;
+  readonly endDate?: string;
+  readonly isStillWorking: boolean;
+}
+
+export interface CoachCertificate {
+  readonly id: string;
+  readonly certificateName: string;
+  readonly organizationName: string;
+  readonly credentialId: string;
+  readonly credentialUrl?: string;
+  readonly certificateUrl?: string;
+  readonly issuedDate?: string;
+  readonly expiryDate?: string;
+}
+
+export interface CoachSkill {
+  readonly id: string;
+  readonly course: LocalizedText;
+  readonly percentageScore: number;
+}
+
+export interface CoachBackground {
+  readonly educations: readonly CoachEducation[];
+  readonly experiences: readonly CoachExperience[];
+  readonly certificates: readonly CoachCertificate[];
+  readonly skills: readonly CoachSkill[];
 }
 
 /**

@@ -35,6 +35,31 @@ async function loadProfileOptions() {
   return { sports, specialisations, locations };
 }
 
+/* The reviews API has no coach filter (only `TargetTypes`), so a coach's rating is
+   worked out from the approved coach reviews, as the storefront counts them. */
+const REVIEW_PAGE_SIZE = 100;
+const REVIEW_MAX_PAGES = 20;
+
+async function loadCoachRating(coachId: string): Promise<{ average: number; count: number }> {
+  let sum = 0;
+  let count = 0;
+  for (let page = 1; page <= REVIEW_MAX_PAGES; page += 1) {
+    const result = await reviewsAdminService.listReviews({
+      page,
+      pageSize: REVIEW_PAGE_SIZE,
+      targetTypes: ["coach"],
+      moderationStatuses: ["approved"],
+    });
+    for (const review of result.items) {
+      if (review.target.id !== coachId) continue;
+      sum += review.rating;
+      count += 1;
+    }
+    if (!result.meta.hasNextPage) break;
+  }
+  return { average: count ? Math.round((sum / count) * 10) / 10 : 0, count };
+}
+
 /**
  * A refusal must be explainable: rejecting or suspending requires a note, which
  * the service enforces. The note is not optional politeness — it is what the
@@ -214,6 +239,154 @@ function CoachCourses({ coachId }: { coachId: string }) {
 }
 
 /**
+ * What the API returns about the coach beyond the editable profile: the sign-in
+ * account and the background they entered. Read-only — the profile form cannot
+ * change it.
+ */
+function CoachRecord({ coach }: { coach: AdminCoach }) {
+  const { t } = useTranslation();
+  const { date, text, number } = useFormatters();
+  const { account, background } = coach;
+  const none = <p className="text-sm text-muted-foreground">{t("state.empty")}</p>;
+  const period = (start: string | undefined, end: string | undefined, ongoing: boolean, ongoingLabel: string) =>
+    [start ? date(start) : "", ongoing ? ongoingLabel : end ? date(end) : ""].filter(Boolean).join(" – ");
+
+  return (
+    <>
+      {account ? (
+        <Section id="account" title={t("coaches.login")}>
+          <div className="flex flex-wrap items-start gap-6">
+            {account.profileImageUrl ? (
+              <img
+                src={account.profileImageUrl}
+                alt={account.fullName}
+                className="size-24 rounded-xl border object-cover"
+              />
+            ) : null}
+            <div className="min-w-0 flex-1">
+              <Facts
+                columns={3}
+                facts={[
+                  { label: t("field.name"), value: <span dir="auto">{account.fullName}</span> },
+                  { label: t("coaches.userName"), value: <span dir="ltr">{account.userName}</span> },
+                  { label: t("field.phone"), value: <span dir="ltr">{account.phoneNumber || "—"}</span> },
+                  { label: t("field.email"), value: <span dir="ltr">{coach.email}</span> },                ]}
+              />
+            </div>
+          </div>
+        </Section>
+      ) : null}
+
+      {background ? (
+        <>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Section id="educations" title={t("coaches.educations")}>
+              {background.educations.length === 0 ? (
+                none
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {background.educations.map((entry) => (
+                    <li key={entry.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
+                      <span className="font-medium" dir="auto">{entry.schoolName}</span>
+                      <span className="text-muted-foreground">
+                        {[entry.academicDegree && text(entry.academicDegree), entry.universityMajor && text(entry.universityMajor)]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {period(entry.startDate, entry.endDate, entry.isStillEducation, t("coaches.stillStudying"))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+
+            <Section id="experiences" title={t("coaches.experiences")}>
+              {background.experiences.length === 0 ? (
+                none
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {background.experiences.map((entry) => (
+                    <li key={entry.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
+                      <span className="font-medium" dir="auto">{entry.companyName}</span>
+                      <span className="text-muted-foreground" dir="auto">
+                        {[entry.jobType && text(entry.jobType), entry.companyAddress, entry.address]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {period(entry.startDate, entry.endDate, entry.isStillWorking, t("coaches.stillWorking"))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Section id="user-certificates" title={t("coaches.certificates")}>
+              {background.certificates.length === 0 ? (
+                none
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {background.certificates.map((entry) => (
+                    <li key={entry.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
+                      <span className="font-medium" dir="auto">{entry.certificateName}</span>
+                      <span className="text-muted-foreground" dir="auto">
+                        {[entry.organizationName, entry.credentialId].filter(Boolean).join(" · ")}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {[entry.issuedDate && date(entry.issuedDate), entry.expiryDate && date(entry.expiryDate)]
+                          .filter(Boolean)
+                          .join(" – ")}
+                      </span>
+                      <span className="flex flex-wrap gap-x-4">
+                        {entry.credentialUrl ? (
+                          <a href={entry.credentialUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                            {t("coaches.credentialUrl")}
+                          </a>
+                        ) : null}
+                        {entry.certificateUrl ? (
+                          <a href={entry.certificateUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                            {t("coaches.certificateFile")}
+                          </a>
+                        ) : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+
+            <Section id="skills" title={t("coaches.skills")}>
+              {background.skills.length === 0 ? (
+                none
+              ) : (
+                <ul className="flex flex-col gap-3 text-sm">
+                  {background.skills.map((entry) => (
+                    <li key={entry.id}>
+                      <div className="flex justify-between gap-2">
+                        <span dir="auto">{text(entry.course)}</span>
+                        <span className="text-muted-foreground">{number(entry.percentageScore)}%</span>
+                      </div>
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full bg-primary" style={{ width: `${entry.percentageScore}%` }} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+          </div>
+        </>
+      ) : null}
+    </>
+  );
+}
+
+/**
  * `/coaches/new`: the profile form alone, plus the background only a new coach
  * has. Saving opens the new coach's page.
  */
@@ -252,11 +425,8 @@ function ExistingCoach({ coachId }: { coachId: string }) {
   const state = useAsyncData(async () => {
     const coach = await coachesAdminService.getCoach(coachId);
     if (!coach) return null;
-    const [reviews, options] = await Promise.all([
-      reviewsAdminService.listReviews({ targetId: coachId, pageSize: 1 }),
-      loadProfileOptions(),
-    ]);
-    return { coach, reviewCount: reviews.meta.totalItems, options };
+    const [rating, options] = await Promise.all([loadCoachRating(coachId), loadProfileOptions()]);
+    return { coach, rating, options };
   }, [coachId]);
 
   const verify = useAsyncAction(
@@ -295,8 +465,8 @@ function ExistingCoach({ coachId }: { coachId: string }) {
                   { label: t("coaches.completedSessions"), value: number(coach.completedSessions) },
                   {
                     label: t("nav.reviews"),
-                    value: coach.rating.count
-                      ? `${coach.rating.average} / 5 · ${number(data.reviewCount)} ${t("coaches.onFile")}`
+                    value: data.rating.count
+                      ? `${data.rating.average} / 5 · ${number(data.rating.count)} ${t("coaches.onFile")}`
                       : "—",
                   },
                   { label: t("coaches.added"), value: date(coach.audit.createdAt) },
@@ -308,6 +478,8 @@ function ExistingCoach({ coachId }: { coachId: string }) {
             {/* Keyed by id only: a refetch after a certification or verification
                 change must not remount the form and discard unsaved edits. */}
             <CoachEditor key={coach.id} coach={coach} {...data.options} onSaved={state.refetch} />
+
+            <CoachRecord coach={coach} />
 
             <div className="grid gap-6 lg:grid-cols-2">
               <Section id="certs" title={t("coaches.certifications")}>

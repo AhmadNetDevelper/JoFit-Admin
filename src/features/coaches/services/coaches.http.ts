@@ -15,6 +15,8 @@ import type {
 import type {
   AdminCoach,
   Certification,
+  CoachAccount,
+  CoachBackground,
   CoachBooking,
   CoachBookingStatus,
   CoachDraft,
@@ -178,6 +180,111 @@ interface AdminCoachDto {
   /* Whether the coach can sign in; nothing on `AdminCoach` shows it yet. */
   readonly hasLogin: boolean;
   readonly audit: AuditDto;
+  /* Not in the published spec, but returned by the live API. */
+  readonly account?: CoachAccountDto | null;
+  readonly educations?: readonly CoachEducationDto[] | null;
+  readonly experiences?: readonly CoachExperienceDto[] | null;
+  readonly userCertificates?: readonly CoachUserCertificateDto[] | null;
+  readonly skills?: readonly CoachSkillDto[] | null;
+}
+
+interface CoachAccountDto {
+  readonly userId: number;
+  readonly userName: string;
+  readonly fullName: string;
+  readonly phoneNumber?: string | null;
+  readonly birthOfDate?: string | null;
+  readonly isActive: boolean;
+  readonly profileImageUrl?: string | null;
+}
+
+interface CoachEducationDto {
+  readonly id: number;
+  readonly schoolName: string;
+  readonly academicDegree?: LocalizedText | null;
+  readonly universityMajor?: LocalizedText | null;
+  readonly startDate?: string | null;
+  readonly endDate?: string | null;
+  readonly isStillEducation: boolean;
+}
+
+interface CoachExperienceDto {
+  readonly id: number;
+  readonly address: string;
+  readonly jobType?: LocalizedText | null;
+  readonly companyName: string;
+  readonly companyAddress: string;
+  readonly startDate?: string | null;
+  readonly endDate?: string | null;
+  readonly isStillWorking: boolean;
+}
+
+interface CoachUserCertificateDto {
+  readonly id: number;
+  readonly certificateName: string;
+  readonly organizationName: string;
+  readonly credentialId: string;
+  readonly credentialUrl?: string | null;
+  readonly certificateUrl?: string | null;
+  readonly issuedDate?: string | null;
+  readonly expiryDate?: string | null;
+}
+
+interface CoachSkillDto {
+  readonly id: number;
+  readonly course: LocalizedText;
+  readonly percentageScore: number;
+}
+
+function toAccount(dto: CoachAccountDto): CoachAccount {
+  return {
+    userId: String(dto.userId),
+    userName: dto.userName,
+    fullName: dto.fullName,
+    phoneNumber: dto.phoneNumber ?? "",
+    birthDate: dto.birthOfDate ?? undefined,
+    isActive: dto.isActive,
+    profileImageUrl: dto.profileImageUrl ?? undefined,
+  };
+}
+
+function toBackground(dto: AdminCoachDto): CoachBackground {
+  return {
+    educations: (dto.educations ?? []).map((entry) => ({
+      id: String(entry.id),
+      schoolName: entry.schoolName,
+      academicDegree: entry.academicDegree ?? undefined,
+      universityMajor: entry.universityMajor ?? undefined,
+      startDate: entry.startDate ?? undefined,
+      endDate: entry.endDate ?? undefined,
+      isStillEducation: entry.isStillEducation,
+    })),
+    experiences: (dto.experiences ?? []).map((entry) => ({
+      id: String(entry.id),
+      address: entry.address,
+      jobType: entry.jobType ?? undefined,
+      companyName: entry.companyName,
+      companyAddress: entry.companyAddress,
+      startDate: entry.startDate ?? undefined,
+      endDate: entry.endDate ?? undefined,
+      isStillWorking: entry.isStillWorking,
+    })),
+    certificates: (dto.userCertificates ?? []).map((entry) => ({
+      id: String(entry.id),
+      certificateName: entry.certificateName,
+      organizationName: entry.organizationName,
+      credentialId: entry.credentialId,
+      credentialUrl: entry.credentialUrl ?? undefined,
+      certificateUrl: entry.certificateUrl ?? undefined,
+      issuedDate: entry.issuedDate ?? undefined,
+      expiryDate: entry.expiryDate ?? undefined,
+    })),
+    skills: (dto.skills ?? []).map((entry) => ({
+      id: String(entry.id),
+      course: entry.course,
+      percentageScore: entry.percentageScore,
+    })),
+  };
 }
 
 function toCoach(dto: AdminCoachDto, locations: readonly Location[]): AdminCoach {
@@ -213,6 +320,8 @@ function toCoach(dto: AdminCoachDto, locations: readonly Location[]): AdminCoach
     rating: { average: 0, count: 0 },
     verificationStatus: dto.verificationStatus as CoachVerificationStatus,
     statusNote: dto.verificationNote ?? undefined,
+    account: dto.account ? toAccount(dto.account) : undefined,
+    background: toBackground(dto),
     audit: toAuditInfo(dto.audit),
   };
 }

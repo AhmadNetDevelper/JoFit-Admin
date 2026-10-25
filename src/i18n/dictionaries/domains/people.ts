@@ -59,7 +59,7 @@ export const peopleEn = {
   "coaches.login": "Sign-in",
   "coaches.loginHint": "The coach signs in with this user name and the temporary password, then changes the password.",
   "coaches.loginEditHint":
-    "The current user name and phone number are not shown here. Leave a box empty to keep what is stored.",
+    "The current user name and phone number are shown. Leave a box empty to keep what is stored.",
   "coaches.userName": "User name",
   "coaches.userNameHint": "3 to 256 characters.",
   "coaches.password": "Temporary password",
@@ -200,7 +200,7 @@ export const peopleAr: Readonly<Record<keyof typeof peopleEn, string>> = {
   "coaches.login": "تسجيل الدخول",
   "coaches.loginHint": "يسجّل المدرّب دخوله باسم المستخدم هذا وكلمة المرور المؤقتة، ثم يغيّر كلمة المرور.",
   "coaches.loginEditHint":
-    "لا يظهر هنا اسم المستخدم ورقم الهاتف الحاليان. اترك الحقل فارغاً للإبقاء على القيمة المحفوظة.",
+    "يظهر هنا اسم المستخدم ورقم الهاتف الحاليان. اترك الحقل فارغاً للإبقاء على القيمة المحفوظة.",
   "coaches.userName": "اسم المستخدم",
   "coaches.userNameHint": "من 3 إلى 256 حرفاً.",
   "coaches.password": "كلمة مرور مؤقتة",

@@ -95,9 +95,8 @@ function toDraft(coach: AdminCoach): CoachDraft {
     email: coach.email,
     headline: coach.headline,
     bio: coach.bio ?? blank,
-    // Never returned by the API; blank keeps what is stored.
-    userName: "",
-    phoneNumber: "",
+    userName: coach.account?.userName ?? "",
+    phoneNumber: coach.account?.phoneNumber ?? "",
     avatar: coach.avatar,
     gallery: coach.gallery,
     sportIds: coach.sportIds,
