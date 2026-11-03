@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui";
-import { notificationsAdminService, type StaffNotificationFeed } from "@/features/notifications";
+import { notificationsAdminService, type StaffNotificationFeed, type StaffNotificationKind } from "@/features/notifications";
 import { useFormatters, useTranslation, type TranslationKey } from "@/i18n";
 
 import { useActionCounts } from "../use-action-counts";
@@ -34,6 +34,12 @@ import { useActionCounts } from "../use-action-counts";
  * `ActionCountsProvider`, which also puts the counts on the sidebar.
  */
 const FEED_POLL_MS = 15_000;
+
+/** Kinds that always open one fixed page, whatever `href` the server sent. */
+const ENTRY_ROUTES: Partial<Record<StaffNotificationKind, string>> = {
+  "enrolment-requested": "/education/enrolments",
+  "enrolment-status": "/education/enrolments",
+};
 
 function useStaffFeed() {
   const [feed, setFeed] = useState<StaffNotificationFeed>({ items: [], unreadCount: 0 });
@@ -203,7 +209,7 @@ export function NotificationsMenu() {
                     type="button"
                     onClick={() => {
                       if (!entry.isRead) void markRead([entry.id]);
-                      navigate(entry.href);
+                      navigate(ENTRY_ROUTES[entry.kind] ?? entry.href);
                     }}
                     className="flex w-full cursor-pointer gap-2.5 rounded-lg px-2 py-2 text-start hover:bg-muted"
                   >
