@@ -87,21 +87,28 @@ export const httpLookupsService: LookupsService = {
    * label. The paged list (`CountryDto {id, nameAr, nameEn, isActive}`) keeps
    * both, at the cost of one call sized to cover every country at once.
    */
-  listCountries: async () => {
-    const page = await httpClient.get<LookupPageDto>(path("country"), {
-      query: { pageSize: 200 },
+  listCountries: () => listEvery("country"),
+
+  listCities: () => listEvery("city"),
+
+  listJobStatuses: () => listEvery("job-status"),
+};
+
+/**
+ * Every entry of one table. The API rejects a `pageSize` above 100 with a
+ * validation error (which broke the user screens that load these lists), so
+ * this walks the pages at the largest size it accepts.
+ */
+const LOOKUP_PAGE_SIZE = 100;
+
+async function listEvery(kind: Parameters<typeof path>[0]): Promise<LookupEntry[]> {
+  const entries: LookupEntry[] = [];
+  for (let pageNumber = 1; ; pageNumber += 1) {
+    const page = await httpClient.get<LookupPageDto>(path(kind), {
+      query: { page: pageNumber, pageSize: LOOKUP_PAGE_SIZE },
       auth: true,
     });
-    return page.items.map(fromDto);
-  },
-
-  listCities: async () => {
-    const page = await httpClient.get<LookupPageDto>(path("city"), { query: { pageSize: 200 }, auth: true });
-    return page.items.map(fromDto);
-  },
-
-  listJobStatuses: async () => {
-    const page = await httpClient.get<LookupPageDto>(path("job-status"), { query: { pageSize: 200 }, auth: true });
-    return page.items.map(fromDto);
-  },
-};
+    entries.push(...page.items.map(fromDto));
+    if (!page.meta?.hasNextPage) return entries;
+  }
+}
