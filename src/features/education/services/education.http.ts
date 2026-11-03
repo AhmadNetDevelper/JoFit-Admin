@@ -1,5 +1,5 @@
 import { adminListParams, httpClient, orNull } from "@/services";
-import type { AuditInfo, CurrencyCode, LocalizedText, MediaImage, Money, Paginated, PublishStatus } from "@/types";
+import type { AuditInfo, CurrencyCode, LocalizedText, MediaImage, Money, PageMeta, Paginated, PublishStatus } from "@/types";
 
 import type {
   AdminCourse,
@@ -63,12 +63,13 @@ interface NextIntakeDto {
 
 interface PagedResultDto<TDto> {
   readonly items: readonly TDto[];
-  readonly page: number;
-  readonly pageSize: number;
-  readonly totalCount: number;
-  readonly totalPages: number;
-  readonly hasPreviousPage: boolean;
-  readonly hasNextPage: boolean;
+  readonly page?: number;
+  readonly pageSize?: number;
+  readonly totalCount?: number;
+  readonly totalPages?: number;
+  readonly hasPreviousPage?: boolean;
+  readonly hasNextPage?: boolean;
+  readonly meta?: PageMeta | null;
 }
 
 /** Not in the live spec yet — the shape the backend needs on `AdminCourseDto.modules` and `CourseDraftRequest.modules`. */
@@ -156,15 +157,22 @@ function toMoney(dto: MoneyDto): Money {
 }
 
 function toPaginated<TDto, TDomain>(page: PagedResultDto<TDto>, mapItem: (item: TDto) => TDomain): Paginated<TDomain> {
+  const items = page.items.map(mapItem);
+  /* The paging numbers arrive either nested in `meta` or flat, depending on the endpoint's version. */
+  if (page.meta) return { items, meta: page.meta };
+  const pageSize = page.pageSize ?? (items.length || 1);
+  const totalItems = page.totalCount ?? items.length;
+  const current = page.page ?? 1;
+  const totalPages = page.totalPages ?? Math.max(1, Math.ceil(totalItems / Math.max(1, pageSize)));
   return {
-    items: page.items.map(mapItem),
+    items,
     meta: {
-      page: page.page,
-      pageSize: page.pageSize,
-      totalItems: page.totalCount,
-      totalPages: page.totalPages,
-      hasNextPage: page.hasNextPage,
-      hasPreviousPage: page.hasPreviousPage,
+      page: current,
+      pageSize,
+      totalItems,
+      totalPages,
+      hasNextPage: page.hasNextPage ?? current < totalPages,
+      hasPreviousPage: page.hasPreviousPage ?? current > 1,
     },
   };
 }
