@@ -71,7 +71,7 @@ interface AdminProductDto {
   readonly summary: WireLocalizedText;
   readonly description: WireLocalizedText | null;
   readonly status: string;
-  readonly brandId: number;
+  readonly brandId: number | null;
   readonly categoryIds: readonly number[];
   readonly sportIds: readonly number[];
   readonly variants: readonly AdminVariantDto[];
@@ -200,7 +200,7 @@ function toAdminProduct(dto: AdminProductDto): AdminProduct {
     summary: dto.summary,
     description: dto.description ?? { en: "", ar: "" },
     status: dto.status as AdminProduct["status"],
-    brandId: String(dto.brandId),
+    brandId: dto.brandId != null ? String(dto.brandId) : "",
     categoryIds: dto.categoryIds.map(String),
     sportIds: dto.sportIds.map(String),
     media: dto.media.map(toMediaImage) as readonly Media[],
@@ -271,7 +271,8 @@ function productBody(draft: ProductDraft) {
     title: draft.title,
     summary: draft.summary,
     description: draft.description,
-    brandId: Number(draft.brandId),
+    /* Optional: no brand is `null`. */
+    brandId: draft.brandId ? Number(draft.brandId) : null,
     categoryIds: draft.categoryIds.map(Number),
     sportIds: draft.sportIds.map(Number),
     status: draft.status,
@@ -342,6 +343,15 @@ export const httpCatalogueService: CatalogueService = {
     const dto = await httpClient.put<AdminProductDto>(`/v1/admin/products/${enc(id)}`, productBody(draft), {
       auth: true,
     });
+    return toAdminProduct(dto);
+  },
+  /* NOTE: endpoint assumed — confirm the route with the backend. */
+  updateVariantPrice: async (productId, variantId, price) => {
+    const dto = await httpClient.put<AdminProductDto>(
+      `/v1/admin/products/${enc(productId)}/variants/${enc(variantId)}/price`,
+      { price: { amount: price.amount, currency: price.currency } },
+      { auth: true },
+    );
     return toAdminProduct(dto);
   },
   setProductStatus: async (id, status) => {

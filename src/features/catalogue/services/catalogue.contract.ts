@@ -1,4 +1,4 @@
-import type { ListQuery, Paginated } from "@/types";
+import type { ListQuery, Money, Paginated } from "@/types";
 
 import type {
   AdminProduct,
@@ -32,6 +32,8 @@ export interface CatalogueService {
   createProduct(draft: NewProductDraft): Promise<AdminProduct>;
   /** The same rules as a create, bar the first variant. A body without `media` keeps the gallery. */
   updateProduct(id: string, draft: ProductDraft): Promise<AdminProduct>;
+  /** Changes one variant's price; 422 when it is not above zero. */
+  updateVariantPrice(productId: string, variantId: string, price: Money): Promise<AdminProduct>;
   setProductStatus(id: string, status: AdminProduct["status"]): Promise<AdminProduct>;
   adjustStock(adjustment: StockAdjustment): Promise<AdminProduct>;
   /** 409 once the product is on any order: orders are history, so archive it instead. */

@@ -37,7 +37,7 @@ import {
 import { sportsService, type Sport } from "@/features/sports";
 import { useAsyncAction, useAsyncData, useUnsavedGuard } from "@/hooks";
 import { useFormatters, useTranslation } from "@/i18n";
-import { parseMoneyInput } from "@/lib";
+import { parseMoneyInput, toMoneyInputValue } from "@/lib";
 import type { PublishStatus } from "@/types";
 
 import { BackLink } from "../../components/record-parts";
@@ -133,11 +133,25 @@ function ProductEditor({
   const [variant, setVariant] = useState<VariantInput>(BLANK_VARIANT);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  /* Existing variants' prices as typed, keyed by variant id. */
+  const initialPrices = (): Record<string, string> =>
+    Object.fromEntries((product?.variants ?? []).map((entry) => [entry.id, toMoneyInputValue(entry.price)]));
+  const [prices, setPrices] = useState<Record<string, string>>(initialPrices);
+  const [baselinePrices] = useState<Record<string, string>>(initialPrices);
+
   const save = useAsyncAction(
-    (input: ProductDraft) =>
-      product
-        ? catalogueService.updateProduct(product.id, input)
-        : catalogueService.createProduct({ ...input, variant: toVariant(variant) }),
+    async (input: ProductDraft) => {
+      if (!product) return catalogueService.createProduct({ ...input, variant: toVariant(variant) });
+      let saved = await catalogueService.updateProduct(product.id, input);
+      for (const entry of product.variants) {
+        if (prices[entry.id] === baselinePrices[entry.id]) continue;
+        const currency = entry.price.currency;
+        /* Unparseable goes through as a value the service refuses. */
+        const price = parseMoneyInput(prices[entry.id] ?? "", currency) ?? { amount: 0, currency };
+        saved = await catalogueService.updateVariantPrice(product.id, entry.id, price);
+      }
+      return saved;
+    },
     {
       onSuccess: (saved) => {
         if (product) {
@@ -161,6 +175,7 @@ function ProductEditor({
    */
   const isDirty =
     JSON.stringify(draft) !== JSON.stringify(baseline) ||
+    JSON.stringify(prices) !== JSON.stringify(baselinePrices) ||
     (!product && JSON.stringify(variant) !== JSON.stringify(BLANK_VARIANT));
   const blocker = useUnsavedGuard(isDirty && !save.isPending && !confirmingDelete);
   const fieldErrors = save.fieldErrors;
@@ -317,7 +332,16 @@ function ProductEditor({
                         <span className="font-mono text-xs text-muted-foreground" dir="ltr">
                           {entry.sku}
                         </span>
-                        <span data-figure>{money(entry.price)}</span>
+                        <Input
+                          dir="ltr"
+                          inputMode="decimal"
+                          aria-label={t("field.price")}
+                          aria-invalid={fieldErrors?.price ? true : undefined}
+                          className="w-28"
+                          disabled={!canWrite}
+                          value={prices[entry.id] ?? ""}
+                          onChange={(event) => setPrices({ ...prices, [entry.id]: event.target.value })}
+                        />
                         <Badge variant={low ? "destructive" : "secondary"}>
                           <span data-figure>{`${t("products.onHand")}: ${number(entry.stockOnHand)}`}</span>
                           {low ? ` · ${t("products.lowStock")}` : ""}
@@ -350,7 +374,7 @@ function ProductEditor({
             </FormSection>
 
             <FormSection title={t("section.organisation")} description={t("section.organisationHint")}>
-              <Field name="brandId" label={t("field.brand")} error={fieldErrors?.brandId} required>
+              <Field name="brandId" label={t("field.brand")} error={fieldErrors?.brandId}>
                 {(props) => (
                   <NativeSelect
                     {...props}

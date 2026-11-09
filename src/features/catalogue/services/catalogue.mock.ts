@@ -209,9 +209,7 @@ function draftErrors(draft: ProductDraft): Record<string, string> {
     }
   }
 
-  if (!draft.brandId) {
-    fieldErrors.brandId = "Choose a brand.";
-  } else if (!mockBrands.some((brand) => brand.id === draft.brandId)) {
+  if (draft.brandId && !mockBrands.some((brand) => brand.id === draft.brandId)) {
     fieldErrors.brandId = "That brand no longer exists.";
   }
   if (!draft.categoryIds?.length) {
@@ -427,6 +425,22 @@ export const mockCatalogueService: CatalogueService = {
     };
     mockProducts[index] = updated;
     pushCatalogueImages("product", id, ["media"], product, updated);
+    return updated;
+  },
+
+  async updateVariantPrice(productId, variantId, price) {
+    await simulateLatency();
+    if (!Number.isInteger(price.amount) || price.amount <= 0) {
+      throw validationFailed({ price: "Enter a price above zero." });
+    }
+    const { product, index } = requireProduct(productId);
+    if (!product.variants.some((entry) => entry.id === variantId)) throw notFound(`Variant "${variantId}"`);
+    const updated: AdminProduct = {
+      ...product,
+      variants: product.variants.map((entry) => (entry.id === variantId ? { ...entry, price } : entry)),
+      audit: { ...product.audit, updatedAt: nowIso(), updatedBy: "admin-3" },
+    };
+    mockProducts[index] = updated;
     return updated;
   },
 
