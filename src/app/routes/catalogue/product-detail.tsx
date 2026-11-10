@@ -119,7 +119,7 @@ function ProductEditor({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const { text, money, number, dateTime } = useFormatters();
+  const { text, number, dateTime } = useFormatters();
   const navigate = useNavigate();
   const notice = useNotice();
   const canWrite = usePermission("catalogue:write");
